@@ -1,4 +1,4 @@
-Script para realizar parsing em páginas HTML
+Script para realizar parsing em páginas HTML. Aceita um único domínio como parâmetro ou um arquivo com uma lista de vários domínios.
 
 Sintaxe de uso:
 

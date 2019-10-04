@@ -1,4 +1,6 @@
 #!/bin/bash
+#Criado por Daniel Domingues
+#https://github.com/lohcus
 
 #FUNCAO PARA IMPRIMIR AS DIVISORIAS
 divisao () {

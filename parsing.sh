@@ -14,7 +14,7 @@ divisao () {
 	echo
 }
 
-main () {
+principal () {
 	#ENTRA NUM LACO INFINITO (SAI QUANDO DIGITA "N" NA PERGUNTA FINAL)
 	while true
 	do
@@ -31,7 +31,7 @@ main () {
 
 		centro_coluna=$(( $(( $(( $colunas-$(( 24+${#url}))))/2 )))) #CALCULO PARA CENTRALIZAR O TEXTO
 		tput cup 2 $centro_coluna #POSICIONAR O CURSOR
-		printf "\033[32;1m[+] Resolvendo URLs em: \033[36;1m$url\n\n\033[m"
+		printf "\033[37;1m[+] Resolvendo URLs em: \033[36;1m$url\n\n\033[m"
 		printf "[+] Resolvendo URLs em: $url\n\n" > $url.ip.txt
 
 		divisao
@@ -42,16 +42,16 @@ main () {
 		then
 			centro_coluna=$(( $(( $(( $colunas-$(( 48+${#url}))))/2 )))) #CALCULO PARA CENTRALIZAR O TEXTO
 			tput cup 5 $centro_coluna 2> /dev/null #POSICIONAR O CURSOR
-			printf "\033[31;1m[+] Concluido! Salvando os resultados em \033[32;1m$url.ip.txt\n\033[m"
+			printf "\033[32;1m[+] Concluido! Salvando os resultados em \033[36;1m$url.ip.txt\n\033[m"
 			divisao
 
 			#SELECIONA UM DE CADA DOMINIO ENCONTRADO E SALVA NUM ARQUIVO
-			#cat index.html | grep href | cut -d "/" -f 3 | cut -d "\"" -f 1 | grep "\." | cut -d ":" -f 1 | sort | uniq > dominios.txt
 			cat index.html | grep -o '<a .*href=.*>' | sed -e 's/<a /\n<a /g' | sed -e 's/<a .*href=['"'"'"]//' -e 's/["'"'"'].*$//' -e '/^$/ d' | grep :// | cut -d "/" -f 3 | cut -d ":" -f 1 | grep "\." | grep -v "%" | sort | uniq > dominios.txt
 		else
-			centro_coluna=$(( $(( $(( $colunas-31))/2 )))) #CALCULO PARA CENTRALIZAR O TEXTO
+			temp="ESTE ENDEREÇO NÃO ESTÁ RRESPONDENDO! VERIFIQUE O DOMÍNIO DIGITADO!"
+			centro_coluna=$(( $(( $(( $colunas-${#temp}))/2 )))) #CALCULO PARA CENTRALIZAR O TEXTO
 			tput cup 5 $centro_coluna #POSICIONAR O CURSOR
-			printf "\033[31;1mEste site nao esta respondendo!\n\033[m"
+			printf "\033[31;1m$temp\n\033[m"
 		fi
 		#TESTA SE O ARQUIVO dominio.txt EXISTE. SE EXISTE EH PQ FORAM ENCONTRADOS DOMINIOS NO SITE DIGITADO
 		if [ -a dominios.txt ]
@@ -155,13 +155,13 @@ main () {
 #==================================INICIO DO SCRIPT PRINCIPAL=====================================
 rm *.ip.txt
 
-#TESTA SE O PAR^AMETRO FOI UM ARQUIVO OU UM DOMINIO
+#TESTA SE O PARÂMETRO FOI UM ARQUIVO OU UM DOMINIO
 if [ -a $1 ]
 then
 	for url in $(cat $1)
 	do
 		file=1
-		main
+		principal
 	done
 	echo
 	rm index*.* &> /dev/null
@@ -170,5 +170,5 @@ then
 else
 	file=0
 	url=$1 #ATRIBUI O PARAMETRO A VARIAVEL $URL
-	main
+	principal
 fi

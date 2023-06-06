@@ -1,5 +1,0 @@
-	1		37.59.174.228			intranet.businesscorp.com.br
-	2		37.59.174.227			mail.businesscorp.com.br
-	3		37.59.174.225			parsingok.businesscorp.com.br
-	4		37.59.174.229			rh.businesscorp.com.br
-	5		37.59.174.235			srvkey.businesscorp.com.br

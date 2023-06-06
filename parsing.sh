@@ -1,174 +1,154 @@
 #!/bin/bash
-#Criado por Daniel Domingues
-#https://github.com/lohcus
+# Criado por Daniel Domingues
+# https://github.com/lohcus
 
-#FUNCAO PARA IMPRIMIR AS DIVISORIAS
-divisao () {
-	#RECALCULA A LARGURA E ALTURA DA JANELA
-	colunas=$(tput cols) #VERIFICA O TAMANHO DA JANELA PARA PODER DESENHAR O LAYOUT DO SCRIPT
-	#LACO PARA PREENCHER UMA LINHA COM "="
-	for i in $(seq 0 1 $(($colunas-1)))
-	do
-		printf "\033[35;1m=\033[m"
-	done
-	echo
+# FUNÇÃO PARA IMPRIMIR AS DIVISÓRIAS
+divisoria() {
+    largura_tela=$(tput cols) # VERIFICA O TAMANHO DA JANELA
+    for i in $(seq 0 1 $((largura_tela - 1))); do
+        echo -ne "${negrito}=${normal}"
+    done
 }
 
-principal () {
-	#ENTRA NUM LACO INFINITO (SAI QUANDO DIGITA "N" NA PERGUNTA FINAL)
-	while true
-	do
-		rm index*.* &> /dev/null
+centraliza_texto() {
+	coluna=$(( (largura_tela - ${#1}) / 2 ))
+    tput cup "$2" $coluna
+}
 
-		clear
-		#CHAMA A FUNCAO PARA DESENHAR UMA DIVISORIA
-		divisao
-		echo
+testa_dominio() {
+    dominios=""
+    dominios=$(wget -qO- "$url" | grep -ioE 'href="([^"#]+)"' | grep -iE 'http://|https://' | sed 's/href="https\{0,1\}:\/\///' | awk -F '[/?&]' '{print $1}' | tr -d '"' | sed 's/www\.//g' | sort | uniq)
 
-		centro_coluna=$(( $(( $(( $colunas-14))/2 )))) #CALCULO PARA CENTRALIZAR O TEXTO
-		tput cup 0 $centro_coluna #POSICIONAR O CURSOR
-		printf "\033[37;1mSCRIPT PARSING\n\033[m"
+	if [ -z "$dominios" ]; then
+        texto="[!] ERRO! ESTE DOMÍNIO NÃO ESTÁ RESPONDENDO OU NÃO FOI POSSÍVEL REALIZAR PARSING NESSA PÁGINA [!]"
+		centraliza_texto "$texto" 5
+		echo -e "${vermelho}$texto${normal}"
+	else
+		largura_campo=$(( (largura_tela - 2) / 2 ))
 
-		centro_coluna=$(( $(( $(( $colunas-$(( 24+${#url}))))/2 )))) #CALCULO PARA CENTRALIZAR O TEXTO
-		tput cup 2 $centro_coluna #POSICIONAR O CURSOR
-		printf "\033[37;1m[+] Resolvendo URLs em: \033[36;1m$url\n\n\033[m"
-		printf "[+] Resolvendo URLs em: $url\n\n" > $url.ip.txt
+		texto="IP"
+		tput cup 5 $(( (largura_campo - ${#texto}) / 2 ))
+		echo -e "${ciano}$texto${normal}"
 
-		divisao
-		echo
+		tput cup 5 $(( largura_campo - 1 ))
+		echo -e "${ciano}||${normal}"
 
-		#TESTA SE O DOMINIO EXISTE
-		if wget $url 2>/dev/null
-		then
-			centro_coluna=$(( $(( $(( $colunas-$(( 48+${#url}))))/2 )))) #CALCULO PARA CENTRALIZAR O TEXTO
-			tput cup 5 $centro_coluna 2> /dev/null #POSICIONAR O CURSOR
-			printf "\033[32;1m[+] Concluido! Salvando os resultados em \033[36;1m$url.ip.txt\n\033[m"
-			divisao
+		texto="URL"
+		tput cup 5 $(( largura_campo + (( (largura_campo -${#texto}) / 2 )) ))
+		echo -e "${ciano}$texto${normal}"
 
-			#SELECIONA UM DE CADA DOMINIO ENCONTRADO E SALVA NUM ARQUIVO
-			cat index.html | grep -o '<a .*href=.*>' | sed -e 's/<a /\n<a /g' | sed -e 's/<a .*href=['"'"'"]//' -e 's/["'"'"'].*$//' -e '/^$/ d' | grep :// | cut -d "/" -f 3 | cut -d ":" -f 1 | grep "\." | grep -v "%" | sort | uniq > dominios.txt
-		else
-			temp="ESTE ENDEREÇO NÃO ESTÁ RRESPONDENDO! VERIFIQUE O DOMÍNIO DIGITADO!"
-			centro_coluna=$(( $(( $(( $colunas-${#temp}))/2 )))) #CALCULO PARA CENTRALIZAR O TEXTO
-			tput cup 5 $centro_coluna #POSICIONAR O CURSOR
-			printf "\033[31;1m$temp\n\033[m"
-		fi
-		#TESTA SE O ARQUIVO dominio.txt EXISTE. SE EXISTE EH PQ FORAM ENCONTRADOS DOMINIOS NO SITE DIGITADO
-		if [ -a dominios.txt ]
-		then
-			tabela=$(( $colunas/4 )) #DIVIDE O TAMANHO DA JANELA EM 4 PARA PODER DIVIDIR OS RESULTADOS EM colunas
-			centro_coluna=$(( ($tabela-4+2)/2 )) #CALCULO PARA CENTRALIZAR O TEXTO DENTRO DAS colunas
-			tput cup 7 $centro_coluna #POSICIONAR O CURSOR
-			echo -n "Line"
-			tput cup 7 $tabela  #POSICIONAR O CURSOR
-			echo -n "||"
-			centro_coluna=$(( $tabela + (($tabela-2+2)/2) )) #CALCULO PARA CENTRALIZAR O TEXTO DENTRO DAS colunas
-			tput cup 7 $centro_coluna #POSICIONAR O CURSOR
-			echo -n "IP"
-			tput cup 7 $(( $tabela*2 )) #POSICIONAR O CURSOR
-			echo -n "||"
-			centro_coluna=$(( $tabela * 2 + (($tabela*2-7+2)/2) ))  #CALCULO PARA CENTRALIZAR O TEXTO DENTRO DAS colunas
-			tput cup 7 $centro_coluna #POSICIONAR O CURSOR
-			echo "ADDRESS"
+		divisoria
+	fi
+}
 
-			#CONTEUDO A SER SALVO NO ARQUIVO TXT
-			echo "=============================================================================" >> $url.ip.txt
-			echo "	Line			IP			ADDRESS" >> $url.ip.txt
-			echo "=============================================================================" >> $url.ip.txt
+funcao_pergunta() {
+	while true; do
+	opcao="Y"
+	echo -ne "${amarelo}Deseja realizar uma nova pesquisa? (Y/n): ${normal}"
+	read -r opcao
 
-			divisao
-
-			line=1  #VARIAVEL DA POSICAO DA LINHA PARA CADA RESULTADO
-			cor=38
-
-			#LE O ARQUIVO COM OS DOMINIOS E PROCURA O IP DE CADA
-			for dominio in $(cat dominios.txt)
-			do
-				#VERIFICA O IP DO DOMINIO E SALVA NUM ARQUIVO PARA POSTERIOR USO
-				host $dominio | grep "has address" | cut -d " " -f 4 > ips.txt
-
-				#cCONDICAO PARA COLORIR OS RESULTADOS
-				if [ $cor -eq 38 ]
-				then
-					cor=32
-				else
-					cor=38
-				fi
-
-				#LE O ARQUIVO COM OS IPs E IMPRIME NA TELA
-				for ip in $(cat ips.txt)
-				do
-					centro_coluna=$(( ($tabela-${#line}+2)/2 )) #CALCULO PARA CENTRALIZAR O TEXTO DENTRO DAS colunas
-					tput cup $(($line+8)) $centro_coluna #POSICIONAR O CURSOR
-					printf "\033[$cor;1m$line\033[m"
-					tput cup  $(($line+8)) $tabela #POSICIONAR O CURSOR
-					echo -n "||"
-					centro_coluna=$(( $tabela + (($tabela-${#ip}+2)/2) )) #CALCULO PARA CENTRALIZAR O TEXTO DENTRO DAS colunas
-					tput cup  $(($line+8)) $centro_coluna #POSICIONAR O CURSOR
-					printf "\033[$cor;1m$ip\033[m"
-					tput cup  $(($line+8)) $(( $tabela*2 )) #POSICIONAR O CURSOR
-					echo -n "||"
-					centro_coluna=$(( $tabela * 2 + (($tabela*2-${#dominio}+2)/2) )) #CALCULO PARA CENTRALIZAR O TEXTO DENTRO DAS colunas
-					tput cup  $(($line+8)) $centro_coluna #POSICIONAR O CURSOR
-					printf "\033[$cor;1m$dominio\n\033[m"
-
-					echo "	$line		$ip			$dominio" >> $url.ip.txt #CONTEUDO A SER SALVO NO ARQUIVO TXT
-
-					let line=$line+1 #INCREMENTA A VARIAVEL PARA PULAR LINHA
-				done
-			done
-		fi
-		divisao
-
-		#CONDICIONAL PARA VERIFICAR SE VAI PARA O PROXIMO SITE DA LISTA OU PERGUNTA OUTRO DOMINIO
-		if [[ $file -eq 1 ]]
-		then
-			printf "\033[32;1mPRESSIONE ENTER PARA PESQUISAR O PROXIMO DOMINIO DA LISTA\033[m"
-			read
+	case ${opcao^^} in
+		"N")
+			exit 0
+			;;
+		"Y")
+			divisoria
+			echo -ne "${amarelo}Digite um novo domínio: ${normal}"
+			read -r url
 			break
-		fi
-
-		opcao="Y"
-		#FICA NESSE LACO ATE QUE SEJA DIGITADO "y" ou "n"
-		while true
-		do
-			printf "\033[32;1mNova pesquisa? (Y/n): \033[m"
-			read opcao
-
-			if [[ ${opcao^^} == "N" ]]
-			then
-				echo
-				rm index*.* &> /dev/null
-				rm dominios.txt &> /dev/null
-				rm ips.txt &> /dev/null
-				exit
-		elif [[ ${opcao^^} == "Y" ]]
-			then
-				printf "\033[37;1mNova URL: \033[m"
-				read url
-				break
-			fi
-		done
-	done
+			;;
+		*)
+            texto="[!] OPÇÃO INVÁLIDA. POR FAVOR, DIGITE Y PARA CONTINUAR OU N PARA SAIR [!]"
+            for (( i=1; i<=$(( (largura_tela - ${#texto}) / 2 )); i++ )); do echo -n " "; done
+			echo -e "${vermelho}[!] OPÇÃO INVÁLIDA. POR FAVOR, DIGITE ${verde}Y${vermelho} PARA CONTINUAR OU ${verde}N${vermelho} PARA SAIR [!]${normal}"
+			;;
+	esac
+done
 }
 
-#==================================INICIO DO SCRIPT PRINCIPAL=====================================
-rm *.ip.txt
 
-#TESTA SE O PARÂMETRO FOI UM ARQUIVO OU UM DOMINIO
-if [ -a $1 ]
-then
-	for url in $(cat $1)
-	do
-		file=1
-		principal
-	done
-	echo
-	rm index*.* &> /dev/null
-	rm dominios.txt &> /dev/null
-	rm ips.txt &> /dev/null
+principal() {
+    clear
+    divisoria
+
+    texto=" SCRIPT PARSING "
+    centraliza_texto "$texto" 0
+    echo -e "${ciano}$texto${normal}"
+
+    texto="[+] Resolvendo URLs em: $url"
+    centraliza_texto "$texto" 2
+    echo -e "${ciano}${texto::24}${vermelho}$url\n${normal}"
+
+    divisoria
+
+    # Testa se o domínio existe
+    if testa_dominio; then
+    # Testa se a variável "dominios" não está vazia
+        linha=7
+        cor="${negrito}"
+
+        # Lê cada linha da variável "dominios"
+        for dominio in $dominios; do
+            # Verifica o IP do domínio e atribui à variável "ips"
+            ips=$(host "$dominio" | grep "has address" | cut -d " " -f 4)
+
+            # CONDIÇÃO PARA COLORIR OS RESULTADOS
+            if [ "$cor" == "${negrito}" ]; then
+                cor="${verde}"
+            else
+                cor="${negrito}"
+            fi
+
+            # Lê a variável "dominios" e imprime cada um na tela
+            for ip in $ips; do
+                for (( i=1; i<=$(( (largura_campo - ${#ip}) / 2 )); i++ )); do echo -n " "; done
+                echo -ne "${cor}$ip${normal}"
+                
+                for (( i=1; i<=$(( (largura_campo - ${#ip} - 1 ) / 2 )); i++ )); do echo -n " "; done
+                echo -ne "${ciano}||${normal}"
+
+                for (( i=1; i<=$(( (largura_campo - ${#dominio} - 1) / 2 )); i++ )); do echo -n " "; done
+                echo -e "${cor}$dominio${normal}"
+
+                ((linha++))
+            done
+        done
+    fi
+
+    divisoria
+
+    # CONDICIONAL PARA VERIFICAR SE VAI PARA O PRÓXIMO SITE DA LISTA OU PERGUNTA OUTRO DOMÍNIO
+    if [[ $file -eq 1 ]]; then
+        texto="[+] PRESSIONE ENTER PARA PESQUISAR O PRÓXIMO DOMÍNIO DA LISTA [+]"
+		for (( i=1; i<=$(( (largura_tela - ${#texto}) / 2 )); i++ )); do echo -n " "; done
+		echo -ne "${amarelo}$texto${normal}"
+        read -r
+    fi
+}
+
+# ==================================INICIO DO SCRIPT PRINCIPAL=====================================
+vermelho="\033[31;1m"
+verde="\033[32;1m"
+amarelo="\033[33;1m"
+ciano="\033[36;1m"
+normal="\033[m"
+negrito="\033[1m"
+
+# TESTA SE O PARÂMETRO FOI UM ARQUIVO OU UM DOMÍNIO
+if [ -z "$1" ]; then
+	echo -e "${vermelho}[!] ERRO! Utilize a sintaxe: $0 <domínio>${normal}"
+	exit 1
+elif [ -a "$1" ]; then
+    for url in $(cat "$1"); do
+        file=1
+        principal
+    done
+    echo
 else
-	file=0
-	url=$1 #ATRIBUI O PARAMETRO A VARIAVEL $URL
-	principal
+    url="$1"
+    while true; do
+        file=0
+        principal
+        funcao_pergunta
+    done
 fi
